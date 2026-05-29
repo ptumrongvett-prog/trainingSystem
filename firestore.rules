@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // FN-135 training records - allow create from web app
+    match /fn135_records/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

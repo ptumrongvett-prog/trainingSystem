@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ramko Training Record</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0f1e;--card:#111b33;--border:rgba(100,120,180,.15);--blue:#3b82f6;--green:#22c55e;--red:#ef4444;--amber:#eab308;--text:#e2e8f0;--muted:#64748b;--font:system-ui,-apple-system,sans-serif}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+.app{max-width:800px;margin:0 auto;padding:16px}
+h1{font-size:1.4rem;margin-bottom:4px}
+h2{font-size:1.1rem;color:var(--blue);margin-bottom:12px}
+.subtitle{font-size:.78rem;color:var(--muted);margin-bottom:20px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+.step-bar{display:flex;gap:4px;margin-bottom:20px}
+.step-dot{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.08)}
+.step-dot.active{background:var(--blue)}
+.step-dot.done{background:var(--green)}
+.btn{padding:12px 24px;border:none;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .2s;min-height:48px}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-success{background:var(--green);color:#fff}
+.btn-danger{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)}
+.btn-secondary{background:rgba(255,255,255,.05);color:var(--text);border:1px solid var(--border)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-block{width:100%;display:block}
+.btn-row{display:flex;gap:10px;margin-top:16px}
+select,input[type=text],input[type=search],textarea{width:100%;padding:12px;background:rgba(255,255,255,.04);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-size:.9rem;font-family:var(--font);min-height:48px}
+select:focus,input:focus,textarea:focus{outline:none;border-color:var(--blue)}
+label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:6px;font-weight:500}
+.emp-list{max-height:400px;overflow-y:auto}
+.emp-item{display:flex;align-items:center;gap:12px;padding:12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
+.emp-item:active,.emp-item.selected{background:rgba(59,130,246,.1)}
+.emp-item .check{width:24px;height:24px;border:2px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.emp-item.selected .check{background:var(--blue);border-color:var(--blue);color:#fff}
+.emp-name{font-weight:600;font-size:.88rem}
+.emp-meta{font-size:.75rem;color:var(--muted)}
+.topic-card{padding:14px;border:1.5px solid var(--border);border-radius:10px;margin-bottom:8px;cursor:pointer;transition:all .15s}
+.topic-card:active,.topic-card.selected{border-color:var(--blue);background:rgba(59,130,246,.08)}
+.topic-id{font-size:.75rem;color:var(--blue);font-weight:600}
+.topic-title{font-size:.88rem;font-weight:500;margin-top:2px}
+.topic-part{font-size:.75rem;color:var(--muted);margin-top:2px}
+.result-row{display:flex;align-items:center;gap:12px;padding:14px;border-bottom:1px solid var(--border)}
+.result-name{flex:1;font-weight:500;font-size:.88rem}
+.pass-fail{display:flex;gap:6px}
+.pf-btn{padding:8px 18px;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:var(--font);min-height:40px}
+.pf-btn.pass-active{background:rgba(34,197,94,.15);border-color:var(--green);color:var(--green)}
+.pf-btn.fail-active{background:rgba(239,68,68,.15);border-color:var(--red);color:var(--red)}
+.sig-canvas{border:1.5px dashed var(--border);border-radius:8px;background:rgba(255,255,255,.02);touch-action:none;width:100%;height:150px;cursor:crosshair}
+.sig-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.clear-sig{font-size:.75rem;color:var(--red);cursor:pointer;background:none;border:none;font-family:var(--font)}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.7rem;font-weight:600}
+.badge-wi{background:rgba(59,130,246,.15);color:var(--blue)}
+.badge-ql{background:rgba(234,179,8,.15);color:var(--amber)}
+.search-box{position:relative;margin-bottom:12px}
+.search-box input{padding-left:36px}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:.85rem}
+.filter-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.filter-row select{flex:1;min-width:120px}
+.count-badge{font-size:.78rem;color:var(--muted);margin-bottom:8px}
+.summary-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:.85rem}
+.summary-label{color:var(--muted)}
+.loading{text-align:center;padding:40px;color:var(--muted)}
+.spinner{display:inline-block;width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.success-screen{text-align:center;padding:40px 20px}
+.success-icon{font-size:4rem;margin-bottom:16px}
+.success-id{font-size:.85rem;color:var(--blue);margin:8px 0 24px;font-family:monospace}
+.type-tabs{display:flex;gap:8px;margin-bottom:16px}
+.type-tab{flex:1;padding:12px;border:1.5px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);font-size:.85rem;font-weight:600;cursor:pointer;font-family:var(--font);text-align:center}
+.type-tab.active{border-color:var(--blue);color:var(--blue);background:rgba(59,130,246,.08)}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="loading" id="loading"><div class="spinner"></div><p style="margin-top:12px">Loading data...</p></div>
+</div>
+
+<script>
+// ========== STATE ==========
+let state = {
+  step: 0, // 0=login, 1=topic, 2=employees, 3=results, 4=signatures, 5=review, 6=done
+  employees: [],
+  wiList: [],
+  qlList: [],
+  trainer: null,
+  topicType: 'WI',
+  selectedTopic: null,
+  selectedEmps: [],
+  results: [], // { passed: null, comments: '' }
+  trainerSig: '',
+  opSigs: [],
+  recordId: '',
+};
+
+const STEPS = ['Login','Topic','Employees','Results','Signatures','Review','Done'];
+
+// ========== INIT ==========
+function init() {
+  google.script.run.withSuccessHandler(emps => {
+    state.employees = emps;
+    google.script.run.withSuccessHandler(wi => {
+      state.wiList = wi;
+      google.script.run.withSuccessHandler(ql => {
+        state.qlList = ql;
+        render();
+      }).getActiveQL();
+    }).getActiveWI();
+  }).getEmployees();
+}
+
+// ========== RENDER ==========
+function render() {
+  const app = document.getElementById('app');
+  let html = renderStepBar();
+  
+  switch(state.step) {
+    case 0: html += renderLogin(); break;
+    case 1: html += renderTopicSelect(); break;
+    case 2: html += renderEmpSelect(); break;
+    case 3: html += renderResults(); break;
+    case 4: html += renderSignatures(); break;
+    case 5: html += renderReview(); break;
+    case 6: html += renderDone(); break;
+  }
+  app.innerHTML = html;
+  
+  if (state.step === 4) initSignaturePads();
+}
+
+function renderStepBar() {
+  if (state.step >= 6) return '';
+  return '<div class="step-bar">' + STEPS.slice(0,6).map((s,i) =>
+    `<div class="step-dot ${i < state.step ? 'done' : i === state.step ? 'active' : ''}"></div>`
+  ).join('') + '</div>';
+}
+
+// ========== STEP 0: LOGIN ==========
+function renderLogin() {
+  const trainers = state.employees.filter(e => 
+    ['Trainers','Supervisor','Manager','Lead'].some(r => (e.department||'').includes(r))
+  );
+  if (trainers.length === 0) {
+    // fallback: show all employees
+    trainers.push(...state.employees);
+  }
+  const opts = trainers.map(e => 
+    `<option value="${e.employee_number}">${e.first_name} ${e.last_name} — ${e.department}</option>`
+  ).join('');
+  
+  return `
+    <div style="text-align:center;margin:40px 0 24px">
+      <div style="font-size:2.5rem;margin-bottom:8px">🎓</div>
+      <h1>Training Record</h1>
+      <p class="subtitle">Ramko Injection — Lead Trainer App</p>
+    </div>
+    <div class="card">
+      <label>Select Your Name (Trainer)</label>
+      <select id="trainerSelect">
+        <option value="">— Choose Trainer —</option>${opts}
+      </select>
+      <div class="btn-row">
+        <button class="btn btn-primary btn-block" onclick="loginTrainer()">Continue →</button>
+      </div>
+    </div>`;
+}
+
+function loginTrainer() {
+  const id = document.getElementById('trainerSelect').value;
+  if (!id) return alert('Please select your name');
+  state.trainer = state.employees.find(e => String(e.employee_number) === id);
+  state.step = 1;
+  render();
+}
+
+// ========== STEP 1: TOPIC SELECT ==========
+function renderTopicSelect() {
+  const list = state.topicType === 'WI' ? state.wiList : state.qlList;
+  const searchId = 'topicSearch';
+  
+  const cards = list.map((t, i) => {
+    const id = state.topicType === 'WI' ? t['WI#'] : t['Quality Alert #'];
+    const title = state.topicType === 'WI' ? t['Work Instruction Title'] : t['Part Description'];
+    const part = state.topicType === 'WI' ? t['Part Number (1)'] : t['Part#'];
+    const sel = state.selectedTopic && state.selectedTopic._idx === i ? 'selected' : '';
+    return `<div class="topic-card ${sel}" onclick="selectTopic(${i})">
+      <span class="topic-id">${id}</span>
+      <div class="topic-title">${title || ''}</div>
+      <div class="topic-part">${part || ''}</div>
+    </div>`;
+  }).join('');
+  
+  return `
+    <h2>📋 Select Training Topic</h2>
+    <div class="type-tabs">
+      <div class="type-tab ${state.topicType==='WI'?'active':''}" onclick="switchType('WI')">📄 Work Instructions (${state.wiList.length})</div>
+      <div class="type-tab ${state.topicType==='QL'?'active':''}" onclick="switchType('QL')">⚠️ Quality Alerts (${state.qlList.length})</div>
+    </div>
+    <div class="search-box"><span class="search-icon">🔍</span><input type="search" id="${searchId}" placeholder="Search..." oninput="filterTopics(this.value)"></div>
+    <div id="topicList">${cards}</div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goStep(0)">← Back</button>
+      <button class="btn btn-primary" style="flex:1" onclick="confirmTopic()" ${state.selectedTopic?'':'disabled'}>Continue →</button>
+    </div>`;
+}
+
+function switchType(t) { state.topicType = t; state.selectedTopic = null; render(); }
+
+function selectTopic(idx) {
+  const list = state.topicType === 'WI' ? state.wiList : state.qlList;
+  const t = list[idx];
+  state.selectedTopic = {
+    _idx: idx,
+    type: state.topicType,
+    documentNumber: state.topicType === 'WI' ? t['WI#'] : t['Quality Alert #'],
+    description: state.topicType === 'WI' ? t['Work Instruction Title'] : t['Part Description'],
+    partNumber: state.topicType === 'WI' ? t['Part Number (1)'] : t['Part#'],
+    reason: t['Reason'] || '',
+  };
+  render();
+}
+
+function confirmTopic() { if (state.selectedTopic) { state.step = 2; render(); } }
+
+function filterTopics(q) {
+  const cards = document.querySelectorAll('.topic-card');
+  q = q.toLowerCase();
+  cards.forEach(c => { c.style.display = c.textContent.toLowerCase().includes(q) ? '' : 'none'; });
+}
+
+// ========== STEP 2: EMPLOYEE SELECT ==========
+function renderEmpSelect() {
+  const depts = [...new Set(state.employees.map(e => e.department).filter(Boolean))].sort();
+  const shifts = [...new Set(state.employees.map(e => e.shift).filter(Boolean))].sort();
+  
+  const empCards = state.employees.map((e, i) => {
+    const sel = state.selectedEmps.includes(i) ? 'selected' : '';
+    return `<div class="emp-item ${sel}" onclick="toggleEmp(${i})" data-dept="${e.department}" data-shift="${e.shift}" data-name="${(e.first_name+' '+e.last_name).toLowerCase()}">
+      <div class="check">${sel ? '✓' : ''}</div>
+      <div><div class="emp-name">${e.first_name} ${e.last_name}</div><div class="emp-meta">#${e.employee_number} • ${e.department} • ${e.shift}</div></div>
+    </div>`;
+  }).join('');
+  
+  return `
+    <h2>👥 Select Employees (${state.selectedEmps.length} selected)</h2>
+    <div class="filter-row">
+      <select onchange="filterEmps()"><option value="">All Depts</option>${depts.map(d=>`<option>${d}</option>`).join('')}</select>
+      <select onchange="filterEmps()"><option value="">All Shifts</option>${shifts.map(s=>`<option>${s}</option>`).join('')}</select>
+    </div>
+    <div class="search-box"><span class="search-icon">🔍</span><input type="search" placeholder="Search name..." oninput="filterEmps()"></div>
+    <div class="emp-list" id="empList">${empCards}</div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goStep(1)">← Back</button>
+      <button class="btn btn-primary" style="flex:1" onclick="confirmEmps()" ${state.selectedEmps.length?'':'disabled'}>Continue (${state.selectedEmps.length}) →</button>
+    </div>`;
+}
+
+function toggleEmp(idx) {
+  const i = state.selectedEmps.indexOf(idx);
+  if (i >= 0) state.selectedEmps.splice(i, 1); else state.selectedEmps.push(idx);
+  render();
+}
+
+function filterEmps() {
+  const selects = document.querySelectorAll('.filter-row select');
+  const dept = selects[0]?.value || '';
+  const shift = selects[1]?.value || '';
+  const search = document.querySelector('.search-box input')?.value.toLowerCase() || '';
+  document.querySelectorAll('.emp-item').forEach(el => {
+    const ok = (!dept || el.dataset.dept === dept) && (!shift || el.dataset.shift === shift) && (!search || el.dataset.name.includes(search));
+    el.style.display = ok ? '' : 'none';
+  });
+}
+
+function confirmEmps() {
+  if (!state.selectedEmps.length) return;
+  state.results = state.selectedEmps.map(() => ({ passed: null, comments: '' }));
+  state.opSigs = state.selectedEmps.map(() => '');
+  state.step = 3;
+  render();
+}
+
+// ========== STEP 3: PASS/FAIL ==========
+function renderResults() {
+  const rows = state.selectedEmps.map((ei, ri) => {
+    const e = state.employees[ei];
+    const r = state.results[ri];
+    return `<div class="result-row">
+      <div class="result-name">${e.first_name} ${e.last_name}<div class="emp-meta">#${e.employee_number}</div></div>
+      <div class="pass-fail">
+        <button class="pf-btn ${r.passed===true?'pass-active':''}" onclick="setResult(${ri},true)">✅ Pass</button>
+        <button class="pf-btn ${r.passed===false?'fail-active':''}" onclick="setResult(${ri},false)">❌ Fail</button>
+      </div>
+    </div>`;
+  }).join('');
+  
+  const allSet = state.results.every(r => r.passed !== null);
+  return `
+    <h2>✅ Training Results</h2>
+    <div class="card" style="padding:0">${rows}</div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goStep(2)">← Back</button>
+      <button class="btn btn-primary" style="flex:1" onclick="goStep(4)" ${allSet?'':'disabled'}>Signatures →</button>
+    </div>`;
+}
+
+function setResult(ri, passed) { state.results[ri].passed = passed; render(); }
+
+// ========== STEP 4: SIGNATURES ==========
+function renderSignatures() {
+  const opPads = state.selectedEmps.map((ei, ri) => {
+    const e = state.employees[ei];
+    return `<div style="margin-bottom:16px">
+      <div class="sig-label"><label style="margin:0">${e.first_name} ${e.last_name} — Operator Signature</label><button class="clear-sig" onclick="clearSig('op_${ri}')">Clear</button></div>
+      <canvas class="sig-canvas" id="op_${ri}" width="700" height="150"></canvas>
+    </div>`;
+  }).join('');
+  
+  return `
+    <h2>✍️ Signatures</h2>
+    <div class="card">
+      <div class="sig-label"><label style="margin:0">Trainer Signature — ${state.trainer.first_name} ${state.trainer.last_name}</label><button class="clear-sig" onclick="clearSig('trainer')">Clear</button></div>
+      <canvas class="sig-canvas" id="trainer" width="700" height="150"></canvas>
+    </div>
+    <div class="card">${opPads}</div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goStep(3)">← Back</button>
+      <button class="btn btn-primary" style="flex:1" onclick="collectSigsAndReview()">Review →</button>
+    </div>`;
+}
+
+// Signature pad logic
+const sigPads = {};
+function initSignaturePads() {
+  document.querySelectorAll('.sig-canvas').forEach(canvas => {
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    sigPads[canvas.id] = { canvas, ctx, hasData: false };
+    
+    function getPos(e) {
+      const r = canvas.getBoundingClientRect();
+      const t = e.touches ? e.touches[0] : e;
+      return { x: (t.clientX - r.left) * (canvas.width / r.width), y: (t.clientY - r.top) * (canvas.height / r.height) };
+    }
+    function start(e) { e.preventDefault(); drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); sigPads[canvas.id].hasData = true; }
+    function move(e) { if (!drawing) return; e.preventDefault(); const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); }
+    function end() { drawing = false; }
+    
+    canvas.addEventListener('mousedown', start);
+    canvas.addEventListener('mousemove', move);
+    canvas.addEventListener('mouseup', end);
+    canvas.addEventListener('touchstart', start, {passive:false});
+    canvas.addEventListener('touchmove', move, {passive:false});
+    canvas.addEventListener('touchend', end);
+  });
+}
+
+function clearSig(id) {
+  const pad = sigPads[id];
+  if (pad) { pad.ctx.clearRect(0, 0, pad.canvas.width, pad.canvas.height); pad.hasData = false; }
+}
+
+function collectSigsAndReview() {
+  const tp = sigPads['trainer'];
+  state.trainerSig = tp && tp.hasData ? tp.canvas.toDataURL() : '';
+  state.selectedEmps.forEach((_, ri) => {
+    const op = sigPads['op_' + ri];
+    state.opSigs[ri] = op && op.hasData ? op.canvas.toDataURL() : '';
+  });
+  state.step = 5;
+  render();
+}
+
+// ========== STEP 5: REVIEW ==========
+function renderReview() {
+  const empRows = state.selectedEmps.map((ei, ri) => {
+    const e = state.employees[ei];
+    const r = state.results[ri];
+    const sig = state.opSigs[ri] ? '✅' : '❌';
+    return `<div class="summary-row"><span>${e.first_name} ${e.last_name}</span><span>${r.passed?'✅ Pass':'❌ Fail'} | Sig: ${sig}</span></div>`;
+  }).join('');
+  
+  return `
+    <h2>📝 Review & Submit</h2>
+    <div class="card">
+      <div class="summary-row"><span class="summary-label">Trainer</span><span>${state.trainer.first_name} ${state.trainer.last_name}</span></div>
+      <div class="summary-row"><span class="summary-label">Topic Type</span><span class="badge ${state.selectedTopic.type==='WI'?'badge-wi':'badge-ql'}">${state.selectedTopic.type}</span></div>
+      <div class="summary-row"><span class="summary-label">Document</span><span>${state.selectedTopic.documentNumber}</span></div>
+      <div class="summary-row"><span class="summary-label">Description</span><span>${state.selectedTopic.description}</span></div>
+      <div class="summary-row"><span class="summary-label">Part#</span><span>${state.selectedTopic.partNumber}</span></div>
+      <div class="summary-row"><span class="summary-label">Employees</span><span>${state.selectedEmps.length}</span></div>
+      <div class="summary-row"><span class="summary-label">Trainer Sig</span><span>${state.trainerSig?'✅':'❌'}</span></div>
+    </div>
+    <div class="card"><h2 style="font-size:.9rem;margin-bottom:8px">Employee Results</h2>${empRows}</div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goStep(4)">← Back</button>
+      <button class="btn btn-success" style="flex:1" onclick="submitAll()" id="submitBtn">💾 Submit Training Record</button>
+    </div>`;
+}
+
+// ========== STEP 6: SUBMIT ==========
+function submitAll() {
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Saving...';
+  
+  const payload = {
+    trainer: state.trainer,
+    topic: state.selectedTopic,
+    employees: state.selectedEmps.map(i => state.employees[i]),
+    results: state.results,
+    trainerSignature: state.trainerSig,
+    operatorSignatures: state.opSigs,
+  };
+  
+  google.script.run
+    .withSuccessHandler(res => {
+      if (res.success) { state.recordId = res.recordId; state.step = 6; render(); }
+      else { alert('Error: ' + res.error); btn.disabled = false; btn.textContent = '💾 Submit'; }
+    })
+    .withFailureHandler(err => { alert('Error: ' + err); btn.disabled = false; btn.textContent = '💾 Submit'; })
+    .saveTrainingLog(payload);
+}
+
+// ========== DONE ==========
+function renderDone() {
+  return `<div class="success-screen">
+    <div class="success-icon">✅</div>
+    <h1>Training Record Saved!</h1>
+    <div class="success-id">${state.recordId}</div>
+    <p style="color:var(--muted);margin-bottom:24px">${state.selectedEmps.length} employee(s) recorded</p>
+    <button class="btn btn-primary btn-block" onclick="resetApp()">➕ New Training Record</button>
+  </div>`;
+}
+
+function resetApp() {
+  state.step = 0; state.selectedTopic = null; state.selectedEmps = [];
+  state.results = []; state.trainerSig = ''; state.opSigs = []; state.recordId = '';
+  render();
+}
+
+function goStep(s) { state.step = s; render(); }
+
+// Start
+init();
+</script>
+</body>
+</html>

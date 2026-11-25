@@ -9,13 +9,12 @@ import type {
   AppData, DataSourceType, DataMeta, Filters,
   AnalyticsSnapshot, Alert, Insight, ValidationIssue,
 } from '../types';
-import { Role } from '../types';
 import { loadAllData, invalidateCache } from '../services/dataProvider';
 import { buildAnalyticsSnapshot } from '../lib/analytics';
 import { generateAlerts } from '../lib/alerts';
 import { generateInsights } from '../lib/insights';
 import { validateAllData } from '../lib/validators';
-import { initLocalAuth, switchRole } from '../services/authProvider';
+import type { AuthState } from '../services/authProvider';
 import type { AuthUser } from '../lib/permissions';
 import { getCacheTimestamp } from '../services/cacheManager';
 
@@ -97,7 +96,7 @@ interface DataStoreContextType {
 
   // Auth
   user: AuthUser | null;
-  setRole: (role: Role, identifier?: string) => void;
+  setAuthUser: (user: AuthUser | null) => void;
 }
 
 const DEFAULT_FILTERS: Filters = {
@@ -139,7 +138,7 @@ export function DataStoreProvider({ children }: { children: React.ReactNode }) {
     (import.meta.env.VITE_DATA_SOURCE as DataSourceType) || 'sample'
   );
   const [filters, setFiltersState] = useState<Filters>(DEFAULT_FILTERS);
-  const [authState, setAuthState] = useState(() => initLocalAuth(Role.ADMIN));
+  const [authState, setAuthState] = useState<AuthState>({ user: null, loading: false, error: null });
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   // Load data
@@ -214,8 +213,8 @@ export function DataStoreProvider({ children }: { children: React.ReactNode }) {
     setFiltersState(DEFAULT_FILTERS);
   }, []);
 
-  const setRole = useCallback((role: Role, identifier?: string) => {
-    setAuthState({ user: switchRole(role, identifier), loading: false, error: null });
+  const setAuthUser = useCallback((user: AuthUser | null) => {
+    setAuthState({ user, loading: false, error: null });
   }, []);
 
   const value: DataStoreContextType = {
@@ -236,7 +235,7 @@ export function DataStoreProvider({ children }: { children: React.ReactNode }) {
     setFilters,
     clearFilters,
     user: authState.user,
-    setRole,
+    setAuthUser,
   };
 
   return (

@@ -1,16 +1,20 @@
 /**
- * authProvider.ts — Firebase Auth ready structure.
- * Currently uses local role selection (no auth backend).
- * Structured for Firebase Auth / SSO integration.
+ * Firebase Auth for the supervisor and admin dashboard.
+ * Role mapping and the sign-out contract live in src/lib/authAccess.ts.
+ * The FN-135 route never calls these functions.
  */
 
-import { Role } from '../types';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import {
+  AUTH_ROLES_COLLECTION,
+  endDashboardSession,
+  errorCode,
+  type AllowlistLookup,
+  type SignedInIdentity,
+} from '../lib/authAccess';
 import type { AuthUser } from '../lib/permissions';
-import { createLocalUser } from '../lib/permissions';
-
-// ─── Future Firebase Auth Integration ───
-// import { initializeApp } from 'firebase/app';
-// import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
+import { dashboardAuth, db } from './firebaseConfig';
 
 export type AuthState = {
   user: AuthUser | null;
@@ -18,68 +22,37 @@ export type AuthState = {
   error: string | null;
 };
 
-/**
- * Initialize auth.
- * Currently returns a local user based on role selection.
- * Future: initialize Firebase Auth and listen for auth state changes.
- */
-export function initLocalAuth(role: Role, identifier?: string): AuthState {
-  return {
-    user: createLocalUser(role, identifier),
-    loading: false,
-    error: null,
-  };
+export async function readAllowlist(uid: string): Promise<AllowlistLookup> {
+  try {
+    const snap = await getDoc(doc(db, AUTH_ROLES_COLLECTION, uid));
+    if (!snap.exists()) return { status: 'missing' };
+    return { status: 'found', data: snap.data() };
+  } catch (err) {
+    return { status: 'unreadable', code: errorCode(err) };
+  }
 }
 
-/**
- * Change the current role (local auth only).
- */
-export function switchRole(role: Role, identifier?: string): AuthUser {
-  return createLocalUser(role, identifier);
+export async function signInDashboard(email: string, password: string): Promise<void> {
+  await signInWithEmailAndPassword(dashboardAuth(), email.trim(), password);
 }
 
-/**
- * Placeholder for Firebase Auth sign-in.
- * Uncomment and configure when Firebase is ready.
- */
-// export async function signIn(email: string, password: string): Promise<AuthUser> {
-//   const auth = getAuth();
-//   const credential = await signInWithEmailAndPassword(auth, email, password);
-//   const user = credential.user;
-//   // Fetch role from Firestore custom claims or user profile
-//   const role = await fetchUserRole(user.uid);
-//   return {
-//     uid: user.uid,
-//     email: user.email || '',
-//     role,
-//     displayName: user.displayName || '',
-//   };
-// }
+export async function signOutDashboard(): Promise<void> {
+  await endDashboardSession({
+    signOut: () => firebaseSignOut(dashboardAuth()),
+    storage: window.localStorage,
+  });
+}
 
-/**
- * Placeholder for sign-out.
- */
-// export async function signOut(): Promise<void> {
-//   const auth = getAuth();
-//   await auth.signOut();
-// }
-
-/**
- * Placeholder for auth state listener.
- */
-// export function onAuthChange(callback: (user: AuthUser | null) => void): () => void {
-//   const auth = getAuth();
-//   return onAuthStateChanged(auth, async (firebaseUser) => {
-//     if (firebaseUser) {
-//       const role = await fetchUserRole(firebaseUser.uid);
-//       callback({
-//         uid: firebaseUser.uid,
-//         email: firebaseUser.email || '',
-//         role,
-//         displayName: firebaseUser.displayName || '',
-//       });
-//     } else {
-//       callback(null);
-//     }
-//   });
-// }
+export function listenDashboardAuth(onChange: (identity: SignedInIdentity | null) => void): () => void {
+  return onAuthStateChanged(dashboardAuth(), user => {
+    if (!user) {
+      onChange(null);
+      return;
+    }
+    onChange({
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+    });
+  });
+}

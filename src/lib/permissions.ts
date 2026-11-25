@@ -1,6 +1,6 @@
 /**
- * permissions.ts — Permission checks and guards.
- * Decoupled from roles.ts for Firebase Auth integration readiness.
+ * permissions.ts — Permission checks for the signed-in dashboard user.
+ * The role is the one read from auth_roles. QC access is enforced in firestore.rules.
  */
 
 import { Role } from '../types';

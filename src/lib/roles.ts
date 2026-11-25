@@ -1,6 +1,7 @@
 /**
- * roles.ts — Role definitions and access control.
- * UI-level role selection for now, structured for Firebase Auth later.
+ * roles.ts — Which dashboard sections each role can see.
+ * Supervisor and admin come from the auth_roles allowlist after Firebase sign-in.
+ * QC reads are enforced in firestore.rules, not by this menu.
  */
 
 import { Role } from '../types';

@@ -265,8 +265,8 @@ function QcBody({ profile, qcState }: { profile: EmployeeProfileModel; qcState: 
       <div className="empty-state" style={{ padding: '24px 8px' }}>
         <h3>QC history isn’t available in this session</h3>
         <p>
-          Reading QC records requires a signed-in Firebase user. This dashboard still uses the local role sign-in,
-          so the browser cannot read the QC collection yet.
+          Firestore refused the QC read for this signed-in account. Supervisor and admin
+          accounts listed in auth_roles can read it after those rules are published.
         </p>
       </div>
     );

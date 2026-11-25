@@ -1,18 +1,40 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Signed-in dashboard users. Pear creates auth_roles/{uid} in the console.
+    // The client cannot write it. QC reads check this document, not a role
+    // the browser claims.
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function allowlistPath() {
+      return /databases/$(database)/documents/auth_roles/$(request.auth.uid);
+    }
+
+    function isDashboardReader() {
+      return isSignedIn()
+        && exists(allowlistPath())
+        && get(allowlistPath()).data.role in ['admin', 'supervisor'];
+    }
+
     // FN-135 training records - allow create from web app
     match /fn135_records/{docId} {
       allow read, write: if true;
     }
 
+    match /auth_roles/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
     // QC history is filled by the plant PC script. The Admin SDK bypasses these rules.
     match /qc_employee_history/{id} {
-      allow read: if request.auth != null;
+      allow read: if isDashboardReader();
       allow write: if false;
     }
     match /qc_meta/{id} {
-      allow read: if request.auth != null;
+      allow read: if isDashboardReader();
       allow write: if false;
     }
   }

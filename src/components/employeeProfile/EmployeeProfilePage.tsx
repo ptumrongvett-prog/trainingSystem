@@ -357,7 +357,7 @@ function OverviewTable({
 function qcEmptyMessage(state: QcLoadResult): string {
   if (state.status === 'ready') return 'No employees with QC problems match that search.';
   if (state.status === 'denied') {
-    return 'QC history is hidden until this session is signed in to Firebase. Search still finds training records.';
+    return 'QC history is hidden for this sign-in. Search still finds training records.';
   }
   if (state.status === 'not_synced') {
     return 'QC data not synced yet. Search by employee ID or name to open a training profile.';
@@ -399,8 +399,8 @@ function QcStatusBanner({ state }: { state: QcLoadResult | { status: 'loading' }
       <div className="alert-banner warning">
         <span>⚠️</span>
         <div>
-          QC history can be read only by a signed-in Firebase user. This dashboard signs in with a local role,
-          so QC records stay hidden. Training profiles still open from search or Part Training.
+          QC history stayed hidden. Firestore allows that read only for an admin or supervisor
+          listed in auth_roles. Training profiles still open from search or Part Training.
         </div>
       </div>
     );

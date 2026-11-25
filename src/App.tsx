@@ -17,14 +17,24 @@ import ActionPlanPage from './components/actions/ActionPlanPage';
 import TrainerApp from './components/trainer/TrainerApp';
 import TrainingLogView from './components/trainer/TrainingLogView';
 import PartTrainingPage from './components/partTraining/PartTrainingPage';
-import EmptyState from './components/shared/EmptyState';
+import EmployeeProfilePage from './components/employeeProfile/EmployeeProfilePage';
 import LoginPage from './components/auth/LoginPage';
 import { Role } from './types';
 import type { AppSection } from './lib/roles';
 
+function initialProfileFocus(): { id: string | null; token: number } {
+  if (!import.meta.env.DEV) return { id: null, token: 0 };
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('fixture') !== 'employee-profile') return { id: null, token: 0 };
+  return { id: params.get('profile'), token: 0 };
+}
+
 function AppContent() {
-  const [activeTab, setActiveTab] = useState<AppSection>('overview');
-  const { loading, error, setRole, user } = useDataStore();
+  const openedOnProfile = import.meta.env.DEV
+    && new URLSearchParams(window.location.search).get('fixture') === 'employee-profile';
+  const [activeTab, setActiveTab] = useState<AppSection>(openedOnProfile ? 'employeeProfile' : 'overview');
+  const [profileFocus, setProfileFocus] = useState(initialProfileFocus);
+  const { error, setRole } = useDataStore();
 
   // Auth state — persisted in localStorage
   const [authedRole, setAuthedRole] = useState<Role | null>(() => {
@@ -48,6 +58,18 @@ function AppContent() {
     setAuthedRole(null);
     localStorage.removeItem('training_auth_role');
     setActiveTab('overview');
+  };
+
+  const openProfile = (empId: string) => {
+    setProfileFocus(prev => ({ id: empId, token: prev.token + 1 }));
+    setActiveTab('employeeProfile');
+  };
+
+  const handleTab = (tab: AppSection) => {
+    if (tab === 'employeeProfile') {
+      setProfileFocus(prev => ({ id: null, token: prev.token + 1 }));
+    }
+    setActiveTab(tab);
   };
 
   // Not logged in — show login page
@@ -84,7 +106,9 @@ function AppContent() {
       case 'fn135':
         return <TrainingLogView />;
       case 'partTraining':
-        return <PartTrainingPage />;
+        return <PartTrainingPage onOpenProfile={openProfile} />;
+      case 'employeeProfile':
+        return <EmployeeProfilePage key={profileFocus.token} focusEmpId={profileFocus.id} />;
       default:
         return <OverviewPage />;
     }
@@ -92,7 +116,7 @@ function AppContent() {
 
   return (
     <div className="app-layout">
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} onLogout={handleLogout} />
+      <Sidebar activeTab={activeTab} onTabChange={handleTab} onLogout={handleLogout} />
       <main className="main-content">
         {error && (
           <div className="alert-banner warning" style={{ marginBottom: 16 }}>
@@ -100,7 +124,7 @@ function AppContent() {
             <div>{error}</div>
           </div>
         )}
-        {activeTab !== 'partTraining' && <FilterBar />}
+        {activeTab !== 'partTraining' && activeTab !== 'employeeProfile' && <FilterBar />}
         {renderPage()}
       </main>
     </div>

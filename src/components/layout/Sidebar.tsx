@@ -18,6 +18,7 @@ const SECTION_META: Record<AppSection, { icon: string; label: string }> = {
   supervisor:  { icon: '👔', label: 'Supervisors' },
   fn135:       { icon: '📋', label: 'FN-135' },
   partTraining:{ icon: '🔩', label: 'Part Training' },
+  employeeProfile: { icon: '👤', label: 'Employee Profile' },
   quiz:        { icon: '📝', label: 'Quiz' },
   audit:       { icon: '📋', label: 'History' },
   alerts:      { icon: '🔔', label: 'Alerts' },

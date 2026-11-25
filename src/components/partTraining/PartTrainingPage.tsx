@@ -11,6 +11,10 @@ import { loadPartTrainingSource } from '../../services/partTrainingSheets';
 import EmptyState from '../shared/EmptyState';
 import ExportButton from '../shared/ExportButton';
 
+interface Props {
+  onOpenProfile?: (empId: string) => void;
+}
+
 function employeeMatches(employee: EmployeePartSummary, query: string): boolean {
   const text = query.trim().toLowerCase();
   if (!text) return true;
@@ -26,7 +30,7 @@ function partMatches(partNumber: string, query: string): boolean {
   return partNumber.toLowerCase().includes(text);
 }
 
-export default function PartTrainingPage() {
+export default function PartTrainingPage({ onOpenProfile }: Props) {
   const [report, setReport] = useState<PartTrainingReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState('Reading the FN-112 training log…');
@@ -226,6 +230,7 @@ export default function PartTrainingPage() {
                 <th>Entries</th>
                 <th>First training</th>
                 <th>Latest training</th>
+                {onOpenProfile && <th></th>}
               </tr>
             </thead>
             <tbody>
@@ -235,6 +240,7 @@ export default function PartTrainingPage() {
                   employee={employee}
                   expanded={expanded.has(employee.empId)}
                   onToggle={() => toggle(employee.empId)}
+                  onOpenProfile={onOpenProfile}
                 />
               ))}
             </tbody>
@@ -263,11 +269,12 @@ function toExportRow(pair: PartTrainingPair): Record<string, string | number> {
 }
 
 function EmployeeRows({
-  employee, expanded, onToggle,
+  employee, expanded, onToggle, onOpenProfile,
 }: {
   employee: EmployeePartSummary;
   expanded: boolean;
   onToggle: () => void;
+  onOpenProfile?: (empId: string) => void;
 }) {
   return (
     <>
@@ -284,10 +291,25 @@ function EmployeeRows({
         <td>{employee.entryCount.toLocaleString()}</td>
         <td>{formatTrainingDate(employee.firstDate)}</td>
         <td>{formatTrainingDate(employee.latestDate)}</td>
+        {onOpenProfile && (
+          <td>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+              onClick={event => {
+                event.stopPropagation();
+                onOpenProfile(employee.empId);
+              }}
+            >
+              Profile
+            </button>
+          </td>
+        )}
       </tr>
       {expanded && (
         <tr>
-          <td colSpan={8} style={{ padding: 0, background: 'var(--bg-primary)' }}>
+          <td colSpan={onOpenProfile ? 9 : 8} style={{ padding: 0, background: 'var(--bg-primary)' }}>
             <div style={{ padding: '12px 24px 16px', maxHeight: 360, overflowY: 'auto' }}>
               <table className="data-table" style={{ fontSize: '0.82rem' }}>
                 <thead>

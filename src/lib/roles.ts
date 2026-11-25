@@ -10,18 +10,18 @@ export type AppSection =
   | 'overview' | 'topics' | 'departments' | 'matrix'
   | 'supervisor' | 'quiz' | 'audit' | 'alerts'
   | 'insights' | 'quality' | 'settings' | 'reports' | 'fn135'
-  | 'partTraining';
+  | 'partTraining' | 'employeeProfile';
 
 /** Section access matrix */
 const SECTION_ACCESS: Record<Role, AppSection[]> = {
   [Role.ADMIN]: [
     'overview', 'topics', 'departments', 'matrix',
     'supervisor', 'quiz', 'audit', 'alerts',
-    'insights', 'quality', 'settings', 'reports', 'fn135', 'partTraining',
+    'insights', 'quality', 'settings', 'reports', 'fn135', 'partTraining', 'employeeProfile',
   ],
   [Role.SUPERVISOR]: [
     'overview', 'topics', 'departments', 'matrix',
-    'supervisor', 'fn135', 'partTraining',
+    'supervisor', 'fn135', 'partTraining', 'employeeProfile',
   ],
   [Role.VIEWER]: [
     'overview', 'topics', 'departments', 'matrix',

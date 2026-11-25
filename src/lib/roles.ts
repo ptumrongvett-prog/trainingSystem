@@ -9,18 +9,19 @@ import { Role } from '../types';
 export type AppSection =
   | 'overview' | 'topics' | 'departments' | 'matrix'
   | 'supervisor' | 'quiz' | 'audit' | 'alerts'
-  | 'insights' | 'quality' | 'settings' | 'reports' | 'fn135';
+  | 'insights' | 'quality' | 'settings' | 'reports' | 'fn135'
+  | 'partTraining';
 
 /** Section access matrix */
 const SECTION_ACCESS: Record<Role, AppSection[]> = {
   [Role.ADMIN]: [
     'overview', 'topics', 'departments', 'matrix',
     'supervisor', 'quiz', 'audit', 'alerts',
-    'insights', 'quality', 'settings', 'reports', 'fn135',
+    'insights', 'quality', 'settings', 'reports', 'fn135', 'partTraining',
   ],
   [Role.SUPERVISOR]: [
     'overview', 'topics', 'departments', 'matrix',
-    'supervisor', 'fn135',
+    'supervisor', 'fn135', 'partTraining',
   ],
   [Role.VIEWER]: [
     'overview', 'topics', 'departments', 'matrix',

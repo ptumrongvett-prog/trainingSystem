@@ -16,6 +16,7 @@ import DataQualityPage from './components/quality/DataQualityPage';
 import ActionPlanPage from './components/actions/ActionPlanPage';
 import TrainerApp from './components/trainer/TrainerApp';
 import TrainingLogView from './components/trainer/TrainingLogView';
+import PartTrainingPage from './components/partTraining/PartTrainingPage';
 import EmptyState from './components/shared/EmptyState';
 import LoginPage from './components/auth/LoginPage';
 import { Role } from './types';
@@ -82,6 +83,8 @@ function AppContent() {
         return <ExecutiveKpiPage />;
       case 'fn135':
         return <TrainingLogView />;
+      case 'partTraining':
+        return <PartTrainingPage />;
       default:
         return <OverviewPage />;
     }
@@ -97,7 +100,7 @@ function AppContent() {
             <div>{error}</div>
           </div>
         )}
-        <FilterBar />
+        {activeTab !== 'partTraining' && <FilterBar />}
         {renderPage()}
       </main>
     </div>

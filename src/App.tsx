@@ -18,9 +18,14 @@ import TrainerApp from './components/trainer/TrainerApp';
 import TrainingLogView from './components/trainer/TrainingLogView';
 import PartTrainingPage from './components/partTraining/PartTrainingPage';
 import EmployeeProfilePage from './components/employeeProfile/EmployeeProfilePage';
-import LoginPage from './components/auth/LoginPage';
-import { Role } from './types';
+import LoginPage, { AuthChecking } from './components/auth/LoginPage';
+import { isEmployeeProfileFixture } from './data/employeeProfileFixture';
+import { useDashboardAuth } from './hooks/useDashboardAuth';
+import { MESSAGES, dashboardRequiresSignIn } from './lib/authAccess';
+import { currentAuthFixture } from './lib/authFixture';
+import { createLocalUser } from './lib/permissions';
 import type { AppSection } from './lib/roles';
+import { Role } from './types';
 
 function initialProfileFocus(): { id: string | null; token: number } {
   if (!import.meta.env.DEV) return { id: null, token: 0 };
@@ -29,35 +34,50 @@ function initialProfileFocus(): { id: string | null; token: number } {
   return { id: params.get('profile'), token: 0 };
 }
 
+function fixtureEmail(role: Role): string {
+  return role === Role.ADMIN ? 'fixture-admin@example.com' : 'fixture-supervisor@example.com';
+}
+
 function AppContent() {
-  const openedOnProfile = import.meta.env.DEV
-    && new URLSearchParams(window.location.search).get('fixture') === 'employee-profile';
+  const openedOnProfile = import.meta.env.DEV && isEmployeeProfileFixture();
+  const [fixtureDismissed, setFixtureDismissed] = useState(false);
+  const authFixture = import.meta.env.DEV && !fixtureDismissed ? currentAuthFixture() : null;
+  const [profileHold, setProfileHold] = useState(() => import.meta.env.DEV && isEmployeeProfileFixture());
+  const pauseFirebase = authFixture != null || profileHold;
+  const auth = useDashboardAuth(!pauseFirebase);
   const [activeTab, setActiveTab] = useState<AppSection>(openedOnProfile ? 'employeeProfile' : 'overview');
   const [profileFocus, setProfileFocus] = useState(initialProfileFocus);
-  const { error, setRole } = useDataStore();
+  const { error, setAuthUser } = useDataStore();
 
-  // Auth state — persisted in localStorage
-  const [authedRole, setAuthedRole] = useState<Role | null>(() => {
-    const saved = localStorage.getItem('training_auth_role');
-    return saved === 'admin' || saved === 'supervisor' ? (saved as Role) : null;
-  });
+  const fixtureRole: Role | null = profileHold
+    ? Role.SUPERVISOR
+    : authFixture === 'admin'
+      ? Role.ADMIN
+      : authFixture === 'supervisor'
+        ? Role.SUPERVISOR
+        : null;
 
-  // Sync role to data store when authedRole changes
   useEffect(() => {
-    if (authedRole) {
-      setRole(authedRole);
+    if (fixtureRole) {
+      setAuthUser(createLocalUser(fixtureRole, fixtureEmail(fixtureRole)));
+      return;
     }
-  }, [authedRole, setRole]);
-
-  const handleLogin = (role: Role) => {
-    setAuthedRole(role);
-    localStorage.setItem('training_auth_role', role);
-  };
+    setAuthUser(auth.user);
+  }, [fixtureRole, auth.user, setAuthUser]);
 
   const handleLogout = () => {
-    setAuthedRole(null);
-    localStorage.removeItem('training_auth_role');
+    setFixtureDismissed(true);
+    setProfileHold(false);
     setActiveTab('overview');
+    if (import.meta.env.DEV) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('fixture');
+      url.searchParams.delete('screen');
+      url.searchParams.delete('profile');
+      const query = url.searchParams.toString();
+      window.history.replaceState({}, '', url.pathname + (query ? `?${query}` : ''));
+    }
+    void auth.signOut();
   };
 
   const openProfile = (empId: string) => {
@@ -72,9 +92,27 @@ function AppContent() {
     setActiveTab(tab);
   };
 
-  // Not logged in — show login page
-  if (!authedRole) {
-    return <LoginPage onLogin={handleLogin} />;
+  const sessionUser = fixtureRole
+    ? createLocalUser(fixtureRole, fixtureEmail(fixtureRole))
+    : auth.user;
+
+  if (!sessionUser) {
+    if (!pauseFirebase && auth.phase === 'checking') {
+      return <AuthChecking label="Checking your session…" />;
+    }
+    const fixtureError = authFixture === 'error'
+      ? MESSAGES.wrongCredentials
+      : authFixture === 'denied'
+        ? MESSAGES.missingRole
+        : null;
+    return (
+      <LoginPage
+        error={fixtureError ?? auth.error}
+        busy={!authFixture && auth.submitting}
+        notice={authFixture ? 'Dev preview. This screen does not contact Firebase.' : null}
+        onSignIn={authFixture ? async () => undefined : auth.signIn}
+      />
+    );
   }
 
   const renderPage = () => {
@@ -116,8 +154,20 @@ function AppContent() {
 
   return (
     <div className="app-layout">
-      <Sidebar activeTab={activeTab} onTabChange={handleTab} onLogout={handleLogout} />
+      <Sidebar
+        activeTab={activeTab}
+        onTabChange={handleTab}
+        onLogout={handleLogout}
+        role={sessionUser.role}
+        email={sessionUser.email}
+      />
       <main className="main-content">
+        {authFixture === 'supervisor' || authFixture === 'admin' ? (
+          <div className="alert-banner info" style={{ marginBottom: 16 }}>
+            <span>🧪</span>
+            <div>Dev preview of the {sessionUser.role} menu. No Firebase session was created.</div>
+          </div>
+        ) : null}
         {error && (
           <div className="alert-banner warning" style={{ marginBottom: 16 }}>
             <span>⚠️</span>
@@ -132,8 +182,8 @@ function AppContent() {
 }
 
 export default function App() {
-  // Standalone /FN135 route — full-screen tablet form (no sidebar, no auth)
-  if (window.location.pathname === '/FN135') {
+  // Standalone /FN135 route — full-screen tablet form (no sidebar, no Firebase sign-in)
+  if (!dashboardRequiresSignIn(window.location.pathname)) {
     return (
       <div style={{ maxWidth: 800, margin: '0 auto', padding: 24, minHeight: '100vh', background: 'var(--bg-primary)' }}>
         <TrainerApp />

@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase/app';
+import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -13,3 +14,11 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+
+let authService: Auth | undefined;
+
+/** Auth is created on the first dashboard sign-in. The FN-135 route never calls this. */
+export function dashboardAuth(): Auth {
+  if (!authService) authService = getAuth(app);
+  return authService;
+}

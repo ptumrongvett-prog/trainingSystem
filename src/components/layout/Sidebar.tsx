@@ -8,6 +8,8 @@ interface Props {
   activeTab: AppSection;
   onTabChange: (tab: AppSection) => void;
   onLogout: () => void;
+  role: Role;
+  email?: string;
 }
 
 const SECTION_META: Record<AppSection, { icon: string; label: string }> = {
@@ -28,9 +30,8 @@ const SECTION_META: Record<AppSection, { icon: string; label: string }> = {
   reports:     { icon: '🖨️', label: 'Reports' },
 };
 
-export default function Sidebar({ activeTab, onTabChange, onLogout }: Props) {
-  const { user, alerts } = useDataStore();
-  const role = user?.role || Role.SUPERVISOR;
+export default function Sidebar({ activeTab, onTabChange, onLogout, role, email }: Props) {
+  const { alerts } = useDataStore();
   const sections = getAccessibleSections(role);
   const criticalAlerts = alerts.filter(a => a.severity === 'critical').length;
   const isAdmin = role === Role.ADMIN;
@@ -80,6 +81,9 @@ export default function Sidebar({ activeTab, onTabChange, onLogout }: Props) {
             <div style={{ fontSize: '0.78rem', fontWeight: 600, color: isAdmin ? '#c084fc' : '#60a5fa' }}>
               {ROLE_LABELS[role]}
             </div>
+            {email && (
+              <div style={{ fontSize: '0.68rem', color: '#94a3b8', wordBreak: 'break-all' }}>{email}</div>
+            )}
           </div>
         </div>
 
